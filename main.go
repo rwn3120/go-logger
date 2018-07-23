@@ -1,0 +1,4 @@
+package gologger
+
+func main() {
+}
