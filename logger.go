@@ -9,23 +9,23 @@ import (
     "github.com/rwn3120/goconf"
 )
 
-type LoggingLevel int
+type Level int
 
 const (
-    LogError LoggingLevel = 1 << iota
+    LogError Level = 1 << iota
     LogWarn
     LogInfo
     LogDebug
     LogTrace
 
-    LogLevelError = "ERROR"
-    LogLevelWarn  = "WARN"
-    LogLevelInfo  = "INFO"
-    LogLevelDebug = "DEBUG"
-    LogLevelTrace = "TRACE"
+    LogErrorText = "ERROR"
+    LogWarnText  = "WARN"
+    LogInfoText  = "INFO"
+    LogDebugText = "DEBUG"
+    LogTraceText = "TRACE"
 )
 
-type LoggerConfiguration struct {
+type Configuration struct {
     Level      string
     StdOutFile string
     StdErrFile string
@@ -46,7 +46,7 @@ func openLog(path string, defaultFile *os.File) *os.File {
     return stdOut
 }
 
-func (c *LoggerConfiguration) Validate() *[]string {
+func (c *Configuration) Validate() *[]string {
     var errorList []string
 
     if errorsCount := len(errorList); errorsCount > 0 {
@@ -55,7 +55,7 @@ func (c *LoggerConfiguration) Validate() *[]string {
     return nil
 }
 
-func (c *LoggerConfiguration) StdOut() *os.File {
+func (c *Configuration) StdOut() *os.File {
     if c.stdout != nil {
         return c.stdout
     }
@@ -63,7 +63,7 @@ func (c *LoggerConfiguration) StdOut() *os.File {
     return c.stdout
 }
 
-func (c *LoggerConfiguration) StdErr() *os.File {
+func (c *Configuration) StdErr() *os.File {
     if c.stderr != nil {
         return c.stderr
     }
@@ -73,22 +73,22 @@ func (c *LoggerConfiguration) StdErr() *os.File {
 
 type Logger struct {
     name          string
-    level         LoggingLevel
+    level         Level
     errLogger     *log.Logger
     wrnLogger     *log.Logger
     infLogger     *log.Logger
     dbgLogger     *log.Logger
     trcLogger     *log.Logger
-    configuration *LoggerConfiguration
+    configuration *Configuration
 }
 
 func createPrefix(level string, name string) string {
     return fmt.Sprintf("%6s [%s]", level, name)
 }
 
-func NewLogger(name string, configuration *LoggerConfiguration, flags ...int) *Logger {
+func NewLogger(name string, configuration *Configuration, flags ...int) *Logger {
     if !goconf.IsValid(configuration) {
-        panic("LoggerConfiguration is not valid")
+        panic("Configuration is not valid")
     }
 
     if len(strings.TrimSpace(name)) == 0 {
@@ -106,15 +106,15 @@ func NewLogger(name string, configuration *LoggerConfiguration, flags ...int) *L
 
     logLevel := LogError
     switch configuration.Level {
-    case LogLevelError:
+    case LogErrorText:
         logLevel = LogError
-    case LogLevelWarn:
+    case LogWarnText:
         logLevel = LogWarn
-    case LogLevelInfo:
+    case LogInfoText:
         logLevel = LogInfo
-    case LogLevelDebug:
+    case LogDebugText:
         logLevel = LogDebug
-    case LogLevelTrace:
+    case LogTraceText:
         logLevel = LogTrace
     default:
         logLevel = LogError
@@ -122,16 +122,16 @@ func NewLogger(name string, configuration *LoggerConfiguration, flags ...int) *L
     return &Logger{
         name:          name,
         level:         logLevel,
-        errLogger:     log.New(configuration.StdErr(), createPrefix(LogLevelError, name), flag),
-        wrnLogger:     log.New(configuration.StdErr(), createPrefix(LogLevelWarn, name), flag),
-        infLogger:     log.New(configuration.StdOut(), createPrefix(LogLevelInfo, name), flag),
-        dbgLogger:     log.New(configuration.StdOut(), createPrefix(LogLevelDebug, name), flag),
-        trcLogger:     log.New(configuration.StdOut(), createPrefix(LogLevelTrace, name), flag),
+        errLogger:     log.New(configuration.StdErr(), createPrefix(LogErrorText, name), flag),
+        wrnLogger:     log.New(configuration.StdErr(), createPrefix(LogWarnText, name), flag),
+        infLogger:     log.New(configuration.StdOut(), createPrefix(LogInfoText, name), flag),
+        dbgLogger:     log.New(configuration.StdOut(), createPrefix(LogDebugText, name), flag),
+        trcLogger:     log.New(configuration.StdOut(), createPrefix(LogTraceText, name), flag),
         configuration: configuration,
     }
 }
 
-func (jl *Logger) log(requiredLevel LoggingLevel, logger *log.Logger, format string, args ...interface{}) {
+func (jl *Logger) log(requiredLevel Level, logger *log.Logger, format string, args ...interface{}) {
     if jl.level <= requiredLevel {
         if jl.level >= LogDebug {
             _, fn, line, _ := runtime.Caller(2)
