@@ -1,4 +1,4 @@
-package gologger
+package logger
 
 func main() {
 }

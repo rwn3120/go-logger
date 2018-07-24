@@ -1,4 +1,4 @@
-package gologger
+package logger
 
 import (
     "fmt"
@@ -6,7 +6,7 @@ import (
     "log"
     "strings"
     "runtime"
-    "github.com/rwn3120/goconf"
+    "github.com/rwn3120/go-conf"
 )
 
 type Level int
@@ -87,7 +87,7 @@ func createPrefix(level string, name string) string {
 }
 
 func NewLogger(name string, configuration *Configuration, flags ...int) *Logger {
-    if !goconf.IsValid(configuration) {
+    if !conf.IsValid(configuration) {
         panic("Configuration is not valid")
     }
 
