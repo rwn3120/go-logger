@@ -86,7 +86,7 @@ func createPrefix(level string, name string) string {
     return fmt.Sprintf("%6s [%s]", level, name)
 }
 
-func NewLogger(name string, configuration *Configuration, flags ...int) *Logger {
+func New(name string, configuration *Configuration, flags ...int) *Logger {
     if !conf.IsValid(configuration) {
         panic("Configuration is not valid")
     }
