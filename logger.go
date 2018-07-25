@@ -97,7 +97,7 @@ func New(name string, configuration *Configuration, flags ...int) *Logger {
 
     flag := 0
     if len(flags) == 0 {
-        flag = log.Ldate | log.Ltime //| log.Lshortfile
+        flag = log.Ldate | log.Ltime
     } else {
         for f := range flags {
             flag = flag | f
