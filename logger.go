@@ -133,7 +133,7 @@ func New(name string, configuration *Configuration, flags ...int) *Logger {
 
 func (jl *Logger) log(requiredLevel Level, logger *log.Logger, format string, args ...interface{}) {
     if requiredLevel <= jl.level {
-        if jl.level >= LogDebug {
+        if jl.level >= LogTrace {
             _, fn, line, _ := runtime.Caller(2)
             prefix := fmt.Sprintf("%s:%d", fn, line)
             logger.Println(fmt.Sprintf(prefix+" "+format, args...))
