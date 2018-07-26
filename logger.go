@@ -12,12 +12,14 @@ import (
 type Level int
 
 const (
-    LogError Level = 1 << iota
+    LogFatal Level = 1 << iota
+    LogError
     LogWarn
     LogInfo
     LogDebug
     LogTrace
 
+    LogFatalText = "FATAL"
     LogErrorText = "ERROR"
     LogWarnText  = "WARN"
     LogInfoText  = "INFO"
@@ -72,13 +74,14 @@ func (c *Configuration) StdErr() *os.File {
 }
 
 type Logger struct {
-    name          string
-    level         Level
-    errLogger     *log.Logger
-    wrnLogger     *log.Logger
-    infLogger     *log.Logger
-    dbgLogger     *log.Logger
-    trcLogger     *log.Logger
+    name  string
+    level Level
+    fatLogger,
+    errLogger,
+    wrnLogger,
+    infLogger,
+    dbgLogger,
+    trcLogger *log.Logger
     configuration *Configuration
 }
 
@@ -122,6 +125,7 @@ func New(name string, configuration *Configuration, flags ...int) *Logger {
     return &Logger{
         name:          name,
         level:         logLevel,
+        fatLogger:     log.New(configuration.StdErr(), createPrefix(LogFatalText, name), flag),
         errLogger:     log.New(configuration.StdErr(), createPrefix(LogErrorText, name), flag),
         wrnLogger:     log.New(configuration.StdErr(), createPrefix(LogWarnText, name), flag),
         infLogger:     log.New(configuration.StdOut(), createPrefix(LogInfoText, name), flag),
@@ -142,6 +146,11 @@ func (jl *Logger) log(requiredLevel Level, logger *log.Logger, format string, ar
         }
 
     }
+}
+
+func (jl *Logger) Fatal(format string, args ...interface{}) {
+    jl.log(LogFatal, jl.errLogger, format, args...)
+    panic(fmt.Sprintf(format, args...))
 }
 
 func (jl *Logger) Error(format string, args ...interface{}) {
