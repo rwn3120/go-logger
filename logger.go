@@ -7,6 +7,8 @@ import (
     "strings"
     "runtime"
     "github.com/rwn3120/go-conf"
+    "github.com/rwn3120/go-multierror"
+    "errors"
 )
 
 type Level int
@@ -48,13 +50,18 @@ func openLog(path string, defaultFile *os.File) *os.File {
     return stdOut
 }
 
-func (c *Configuration) Validate() *[]string {
-    var errorList []string
-
-    if errorsCount := len(errorList); errorsCount > 0 {
-        return &errorList
+func (c *Configuration) Validate() []error {
+    me := multierror.New()
+    switch strings.ToUpper(c.Level) {
+    case LogErrorText:
+    case LogWarnText:
+    case LogInfoText:
+    case LogDebugText:
+    case LogTraceText:
+    default:
+        me.Add(errors.New(fmt.Sprintf("unknown log level: %s", c.Level)))
     }
-    return nil
+    return me.ErrorsOrNil()
 }
 
 func (c *Configuration) StdOut() *os.File {
@@ -89,9 +96,29 @@ func createPrefix(level string, name string) string {
     return fmt.Sprintf("%6s [%s]", level, name)
 }
 
-func New(name string, configuration *Configuration, flags ...int) *Logger {
+func GetLevel(level string) Level {
+    logLevel := LogError
+    switch strings.ToUpper(level) {
+    case LogErrorText:
+        logLevel = LogError
+    case LogWarnText:
+        logLevel = LogWarn
+    case LogInfoText:
+        logLevel = LogInfo
+    case LogDebugText:
+        logLevel = LogDebug
+    case LogTraceText:
+        logLevel = LogTrace
+    default:
+        fmt.Errorf("unknown log level: %s (will use %s instead)", level, LogErrorText)
+        logLevel = LogError
+    }
+    return logLevel
+}
+
+func New(name string, configuration *Configuration, flags ...int) (*Logger, error) {
     if !conf.IsValid(configuration) {
-        panic("Configuration is not valid")
+        return nil, errors.New("configuration is not valid")
     }
 
     if len(strings.TrimSpace(name)) == 0 {
@@ -107,24 +134,9 @@ func New(name string, configuration *Configuration, flags ...int) *Logger {
         }
     }
 
-    logLevel := LogError
-    switch configuration.Level {
-    case LogErrorText:
-        logLevel = LogError
-    case LogWarnText:
-        logLevel = LogWarn
-    case LogInfoText:
-        logLevel = LogInfo
-    case LogDebugText:
-        logLevel = LogDebug
-    case LogTraceText:
-        logLevel = LogTrace
-    default:
-        logLevel = LogError
-    }
     return &Logger{
         name:          name,
-        level:         logLevel,
+        level:         GetLevel(configuration.Level),
         fatLogger:     log.New(configuration.StdErr(), createPrefix(LogFatalText, name), flag),
         errLogger:     log.New(configuration.StdErr(), createPrefix(LogErrorText, name), flag),
         wrnLogger:     log.New(configuration.StdErr(), createPrefix(LogWarnText, name), flag),
@@ -132,7 +144,7 @@ func New(name string, configuration *Configuration, flags ...int) *Logger {
         dbgLogger:     log.New(configuration.StdOut(), createPrefix(LogDebugText, name), flag),
         trcLogger:     log.New(configuration.StdOut(), createPrefix(LogTraceText, name), flag),
         configuration: configuration,
-    }
+    }, nil
 }
 
 func (jl *Logger) log(requiredLevel Level, logger *log.Logger, format string, args ...interface{}) {
